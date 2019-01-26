@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <math.h>;
+#include <math.h>
 
 
 int motorA1 = 11;
@@ -12,6 +12,9 @@ int enablePinA = 10;
 int enablePinB = 6;
 
 int fullStepsPerSecond;
+
+int sinMap[256];
+int cosMap[256];
 
 #define MICROSTEPS 64
 
@@ -32,65 +35,25 @@ void setup()
         while (!Serial);
         Serial.begin(9600);
 
-        analogWrite(enablePinA, 255);
-        analogWrite(enablePinB, 255);
+        for(int i=0; i< MICROSTEPS * 4; i++){
+                sinMap[i] = round(sin(M_PI * i / (2 * MICROSTEPS)) * 255);
+                cosMap[i] = round(cos(M_PI * i / (2 * MICROSTEPS)) * 255);  
+        }
 }
 void makeStep(int microstep){
         microstep = microstep % (MICROSTEPS * 4);
 
-        int coilA = ceil(sin(M_PI * microstep / (2 * MICROSTEPS)) * 255);
-        int coilB = ceil(cos(M_PI * microstep / (2 * MICROSTEPS)) * 255);
-
+        int coilA = sinMap[microstep];
+        int coilB = cosMap[microstep];
 
         analogWrite(enablePinA, abs(coilA));
         analogWrite(enablePinB, abs(coilB));
 
-        uint8_t motorA1Value;
-        uint8_t motorA2Value;
-        uint8_t motorB1Value;
-        uint8_t motorB2Value;
+        digitalWrite(motorA1, coilA > 0 ? HIGH : LOW);
+        digitalWrite(motorA2, coilA >= 0 ? LOW : HIGH);
 
-        if(coilA > 2) {
-                motorA1Value = HIGH;
-                motorA2Value = LOW;
-        }else if(coilA < -2) {
-                motorA1Value = LOW;
-                motorA2Value = HIGH;
-        }else{
-                motorA1Value = LOW;
-                motorA2Value = LOW;
-        }
-
-        if(coilB > 2) {
-                motorB1Value = HIGH;
-                motorB2Value = LOW;
-        }else if (coilB < -2) {
-                motorB1Value= LOW;
-                motorB2Value = HIGH;
-        }else{
-                motorB1Value = LOW;
-                motorB2Value = LOW;
-        }
-
-        digitalWrite(motorA1, motorA1Value);
-        digitalWrite(motorA2, motorA2Value);
-        digitalWrite(motorB1, motorB1Value);
-        digitalWrite(motorB2, motorB2Value);
-
-        // Serial.print(coilA);
-        // Serial.print(" | ");
-        // Serial.print(coilB);
-        //
-        // Serial.print(" | ");
-        // Serial.print(motorA1Value == HIGH ? "HIGH" : "LOW");
-        // Serial.print(" | ");
-        // Serial.print(motorA2Value == HIGH ? "HIGH" : "LOW");
-        // Serial.print(" | ");
-        // Serial.print(motorB1Value == HIGH ? "HIGH" : "LOW");
-        // Serial.print(" | ");
-        // Serial.print(motorB2Value == HIGH ? "HIGH" : "LOW");
-        //
-        // Serial.print("\n");
+        digitalWrite(motorB1, coilB > 0 ? HIGH : LOW);
+        digitalWrite(motorB2, coilB >= 0 ? LOW : HIGH);
 }
 
 
